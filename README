@@ -1,5 +1,42 @@
 php-ipaddr
 
+classes / methods:
+  class IPAddr
+    public function __construct($addr='::', $family=null)
+    public static function new_ntoh($addr)
+    public static function ntop($addr)
+    public function mask($prefixlen)
+    public function is_include($other)
+    public function to_i()
+    public function to_s()
+    public function getFamily()
+    public function hton()
+    public function is_ipv4()
+    public function is_ipv6()
+    public function is_ipv4_mapped()
+    public function is_ipv4_compat()
+    public function ipv4_mapped()
+    public function ipv4_compact()
+    public function native()
+    public function reverse()
+    public function ip6_arpa()
+    public function ip6_int()
+    public function succ()
+    protected function _set($addr, $family=null)
+    protected function _addr_mask($addr)
+    protected function _reverse()
+    public function __toString()
+    public function op_and($other)
+    public function op_or($other)
+    public function op_right_shift($num)
+    public function op_left_shift($num)
+    public function op_xor()
+    public function op_equal($other)
+    public static function coerce_other($other)
+    protected static function in_addr($addr)
+    protected static function in6_addr($left)
+  class IPAddrException extends Exception
+
 required:
   http://pear.php.net/package/Math_BigInteger
 
