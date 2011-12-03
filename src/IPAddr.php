@@ -440,14 +440,16 @@ class IPAddr
 	public function op_and($other)
 	{
 		$clone = clone $this;
-		return $clone->_set($this->_addr->bitwise_and(self::coerce_other($other)->to_i()));
+		$other = self::coerce_other($other);
+		return $clone->_set($this->_addr->bitwise_and($other->to_i()));
 	}
 
 	// Returns a new ipaddr built by bitwise OR.
 	public function op_or($other)
 	{
 		$clone = clone $this;
-		return $clone->_set($this->_addr->bitwise_or(self::coerce_other($other)->to_i()));
+		$other = self::coerce_other($other);
+		return $clone->_set($this->_addr->bitwise_or($other->to_i()));
 	}
 
 	// Returns a new ipaddr built by bitwise right-shift.
@@ -476,7 +478,7 @@ class IPAddr
 	public function op_equal($other)
 	{
 		$other = self::coerce_other($other);
-		return $this->getFamily()==$other->getFamily() && $this->to_i()==$other->to_i();
+		return $this->getFamily()==$other->getFamily() && (string)$this->to_i()===(string)$other->to_i();
 	}
 
 

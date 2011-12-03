@@ -295,13 +295,46 @@ class IPAddrTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals("0000:0000:0000:0000:ffff:c0a8:7b2d:0000", (string)$ip->op_left_shift(16));
 	}
 
-/*
 	public function test_op_equal()
 	{
+		// IPv4
+		$ip_a = new IPAddr("192.168.123.45");
+		$ip_b = new IPAddr("192.168.123.45");
+		$this->assertTrue($ip_a->op_equal($ip_b));
+
+		$ip_a = new IPAddr("192.168.123.45");
+		$ip_b = new IPAddr("192.168.123.46");
+		$this->assertFalse($ip_a->op_equal($ip_b));
+
+		// IPv6
+		$ip_a = new IPAddr("2001:0db8:bd05:01d2:288a:1fc0:0001:10ee");
+		$ip_b = new IPAddr("2001:0db8:bd05:01d2:288a:1fc0:0001:10ee");
+		$this->assertTrue($ip_a->op_equal($ip_b));
+
+		$ip_a = new IPAddr("2001:0db8:bd05:01d2:288a:1fc0:0001:10ee");
+		$ip_b = new IPAddr("2001:0db8:bd05:01d2:288a:1fc0:0001:10ef");
+		$this->assertFalse($ip_a->op_equal($ip_b));
+
+		// IPv4 IPv6
+		$ip_a = new IPAddr("192.168.123.45");
+		$ip_b = new IPAddr("::192.168.123.45");
+		$this->assertFalse($ip_a->op_equal($ip_b));
 	}
 
 	public function test_coerce_other()
 	{
+		// IPv4
+		$ip = new IPAddr("192.168.123.45");
+		$this->assertEquals("IPAddr", get_class(IPAddr::coerce_other($ip)));
+
+		$ip = "192.168.123.45";
+		$this->assertEquals("IPAddr", get_class(IPAddr::coerce_other($ip)));
+
+		// IPv6
+		$ip = new IPAddr("2001:0db8:bd05:01d2:288a:1fc0:0001:10ee");
+		$this->assertEquals("IPAddr", get_class(IPAddr::coerce_other($ip)));
+
+		$ip = "2001:0db8:bd05:01d2:288a:1fc0:0001:10ee";
+		$this->assertEquals("IPAddr", get_class(IPAddr::coerce_other($ip)));
 	}
-*/
 }
