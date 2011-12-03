@@ -6,19 +6,18 @@ require_once 'Math/BigInteger.php';
 
 class IPAddr
 {
-	const HEX_FFFF = "65535";
-	const HEX_FFFFFFFF = "4294967295";
-	const HEX_FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF = "340282366920938463463374607431768211455";
-	const HEX_FFFFFFFFFFFFFFFFFFFFFFFF = "79228162514264337593543950335";
-	const HEX_FFFF00000000 = "281470681743360";
-
-	const IN4MASK = self::HEX_FFFFFFFF;
-	const IN6MASK = self::HEX_FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-	const IN6FORMAT = "%.4x:%.4x:%.4x:%.4x:%.4x:%.4x:%.4x:%.4x";
+	// const
+	protected static $HEX_FFFF = null;
+	protected static $HEX_FFFFFFFF = null;
+	protected static $HEX_FFFFFFFFFFFFFFFFFFFFFFFF = null;
+	protected static $HEX_FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF = null;
+	protected static $HEX_FFFF00000000 = null;
 
 	protected static $IN4MASK = null;
 	protected static $IN6MASK = null;
+	const IN6FORMAT = "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x";
 
+	// var
 	protected $_addr = null;
 	protected $_mask_addr = null;
 	protected $_family = null;
@@ -45,8 +44,14 @@ class IPAddr
 	{
 		// setup static properties
 		if (is_null(self::$IN4MASK)) {
-			self::$IN4MASK = new Math_BigInteger(self::HEX_FFFFFFFF);
-			self::$IN6MASK = new Math_BigInteger(self::HEX_FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+			self::$HEX_FFFF = new Math_BigInteger("65535");
+			self::$HEX_FFFFFFFF = new Math_BigInteger("4294967295");
+			self::$HEX_FFFFFFFFFFFFFFFFFFFFFFFF = new Math_BigInteger("79228162514264337593543950335");
+			self::$HEX_FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF = new Math_BigInteger("340282366920938463463374607431768211455");
+			self::$HEX_FFFF00000000 = new Math_BigInteger("281470681743360");
+
+			self::$IN4MASK = self::$HEX_FFFFFFFF;
+			self::$IN6MASK = self::$HEX_FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 		}
 
 		if ($addr instanceof self) {
@@ -104,7 +109,8 @@ class IPAddr
 			$s = implode('.', unpack('C4', $addr));
 			break;
 		case 16:
-			$s = sprintf(self::IN6FORMAT, unpack('n8', $addr));
+			$args = array_merge(array(self::IN6FORMAT), unpack('n8', $addr));
+			$s = call_user_func_array('sprintf', $args);
 			break;
 		default:
 			throw new IPAddrException("unsupported address family");
@@ -150,7 +156,7 @@ class IPAddr
 			throw new IPAddrException("unsupported address family");
 		}
 		//$this->_addr = ($this->_addr >> $masklen) << $masklen;
-		$this->_addr = $this->_addr->bitwise_rightShift($masklen)->betwise_leftShift($masklen);
+		$this->_addr = $this->_addr->bitwise_rightShift($masklen)->bitwise_leftShift($masklen);
 		return $this;
 	}
 
@@ -167,7 +173,7 @@ class IPAddr
 	{
 		$other = self::coerce_other($other);
 		if ($this->is_ipv4_mapped()) {
-			if ($this->_mask_addr->bitwise_rightShift(32)->compare(new BitInt(self::HEX_FFFFFFFFFFFFFFFFFFFFFFFF))!=0) {
+			if ($this->_mask_addr->bitwise_rightShift(32)->compare(self::$HEX_FFFFFFFFFFFFFFFFFFFFFFFF)!=0) {
 				return false;
 			}
 			$mask_addr = $this->_mask_addr->bitwise_and(self::$IN4MASK);
@@ -237,14 +243,14 @@ class IPAddr
 	{
 		switch ($this->_family) {
 		case AF_INET:
-			return pack('N', array((int)(string)($this->_addr)));
+			return pack('N', (int)(string)($this->_addr));
 		case AF_INET6:
-			$octets = array();
+			$sections = array();
 			for ($i=0; $i<8; $i++) {
-				list($octet) = $this->_addr->divide(new Math_BigInteger(112 - 16 * $i));
-				$octets[] = (int)(string)($octet->and(new Math_BigInteger(self::HEX_FFFF)));
+				$sections[] = (int)(string)($this->_addr->bitwise_rightShift($i*16)->bitwise_and(self::$HEX_FFFF));
 			}
-			return pack('n8', $octets);
+			$args = array_merge(array('n8'), array_reverse($sections));
+			return call_user_func_array('pack', $args);
 		default:
 			throw new IPAddrException("unsupported address family");
 		}
@@ -265,18 +271,17 @@ class IPAddr
 	// Returns true if the ipaddr is an IPv4-mapped IPv6 address.
 	public function is_ipv4_mapped()
 	{
-		return $this->is_ipv6() && $this->_addr->bitwise_rightShift(32)->compare(new Math_BigInteger(self::HEX_FFFF))==0;
+		return $this->is_ipv6() && $this->_addr->bitwise_rightShift(32)->compare(self::$HEX_FFFF)==0;
 	}
 
 	// Returns true if the ipaddr is an IPv4-compatible IPv6 address.
-	public function is_ipv4_compact()
+	public function is_ipv4_compat()
 	{
-		//if (!$this->ipv6() || ($this->_addr >> 32) != 0) {
-		if (!$this->ipv6() || 0<$this->_addr->bitwise_rightShift(32)->compare(new Math_BigInteger("0"))) {
+		if (!$this->is_ipv6() || 0<$this->_addr->bitwise_rightShift(32)->compare(new Math_BigInteger("0"))) {
 			return false;
 		}
 		$a = (int)(string)($this->_addr->bitwise_and(self::$IN4MASK));
-		return $a!=0 && a!=1;
+		return $a!=0 && $a!=1;
 	}
 
 	// Returns a new ipaddr built by converting the native IPv4 address
@@ -287,7 +292,7 @@ class IPAddr
 			throw new IPAddrException("not an IPv4 address");
 		}
 		$clone = clone $this;
-		return $clone->_set($this->_addr->bitwise_or(new Math_BigInteger(self::HEX_FFFF00000000)), AF_INET6);
+		return $clone->_set($this->_addr->bitwise_or(self::$HEX_FFFF00000000), AF_INET6);
 	}
 
 	// Returns a new ipaddr built by converting the native IPv4 address
@@ -306,7 +311,7 @@ class IPAddr
 	// IPv4-compatible IPv6 address, returns self.
 	public function native()
 	{
-		if (!$this->is_ipv4_mapped() && !$this->is_ipv4_compact()) {
+		if (!$this->is_ipv4_mapped() && !$this->is_ipv4_compat()) {
 			return $this;
 		}
 		$clone = clone $this;
@@ -334,7 +339,7 @@ class IPAddr
 		if (!$this->is_ipv6()) {
 			throw new IPAddrException("not an IPv6 address");
 		}
-		return $this->_reverse() . '.ipv6.arpa';
+		return $this->_reverse() . '.ip6.arpa';
 	}
 
 	// Returns a string for DNS reverse lookup compatible with RFC1886.
@@ -343,7 +348,7 @@ class IPAddr
 		if (!$this->is_ipv6()) {
 			throw new IPAddrException("not an IPv6 address");
 		}
-		return $this->_reverse() . '.ipv6.int';
+		return $this->_reverse() . '.ip6.int';
 	}
 
 	// Returns the successor to the ipaddr.
@@ -357,12 +362,12 @@ class IPAddr
 	{
 		switch (isset($family) ? $family : $this->_family) {
 		case AF_INET:
-			if (0<$addr->compare(new Math_BigInteger("0")) || $addr->compare(self::$IN4MASK)<0) {
+			if ($addr->compare(new Math_BigInteger("0"))<0 || 0<$addr->compare(self::$IN4MASK)) {
 				throw new IPAddrException("invalid address");
 			}
 			break;
 		case AF_INET6:
-			if (0<$addr->compare(new Math_BigInteger("0")) || $addr->compare(self::$IN4MASK)<0) {
+			if ($addr->compare(new Math_BigInteger("0"))<0 || 0<$addr->compare(self::$IN6MASK)) {
 				throw new IPAddrException("invalid address");
 			}
 			break;
@@ -392,9 +397,17 @@ class IPAddr
 	{
 		switch ($this->_family) {
 		case AF_INET:
-			return implode('.', array_reverse(long2ip($this->_addr)));
+			return implode('.', array_reverse(explode('.', long2ip($this->_addr))));
 		case AF_INET6:
-			return implode('.', array_reverse(str_split(sprintf("%032x", (string)$this->_addr))));
+			$hex = "";
+			$tmp = $this->_addr;
+			for ($i=0; $i<8; $i++) {
+				$section = (int)(string)$tmp->bitwise_and(self::$HEX_FFFF);
+				$section = sprintf("%04x", $section);
+				$hex = $section . $hex;
+				$tmp = $tmp->bitwise_rightShift(16);
+			}
+			return implode('.', array_reverse(str_split($hex)));
 		default:
 			throw new IPAddrException("unsupported address family");
 		}
@@ -411,12 +424,12 @@ class IPAddr
 			$sections = array();
 			$tmp = $this->_addr;
 			for ($i=0; $i<8; $i++) {
-				$section = (int)(string)$tmp->bitwise_and(new Math_BigInteger(self::HEX_FFFF));
+				$section = (int)(string)$tmp->bitwise_and(self::$HEX_FFFF);
 				$section = sprintf("%04x", $section);
 				array_unshift($sections, $section);
 				$tmp = $tmp->bitwise_rightShift(16);
 			}
-			return implode('.', $sections);
+			return implode(':', $sections);
 		default:
 			throw new IPAddrException("unsupported address family");
 		}
@@ -489,7 +502,7 @@ class IPAddr
 	protected static function in6_addr($left)
 	{
 		if (preg_match('/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i', $left, $m)) {
-			return self::in_addr($m[1])->add(new Math_BigInteger(self::HEX_FFFF00000000));
+			return self::in_addr($m[1])->add(self::$HEX_FFFF00000000);
 		} else if (preg_match('/^::(\d+\.\d+\.\d+\.\d+)$/', $left, $m)) {
 			return self::in_addr($m[1]);
 		} else if (preg_match('/[^0-9a-f:]/i', $left)) {
@@ -518,7 +531,8 @@ class IPAddr
 		if ($rest < 0) {
 			return null;
 		}
-		$sections = array_merge($l, array_fill(0, $rest, 0), $r);
+		$c = 0<$rest ? array_fill(0, $rest, 0) : array();
+		$sections = array_merge($l, $c, $r);
 		$result = new Math_BigInteger();
 		foreach ($sections as $section) {
 			$section = hexdec($section);

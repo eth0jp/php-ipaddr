@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<project name="IPAddr" default="test" basedir=".">
+  <target name="test">
+    <delete dir="reports" includeemptydirs="true" />
+    <mkdir dir="reports" />
+    <phpunit>
+      <formatter todir="reports" type="xml" outfile="unitreport.xml" />
+      <batchtest>
+        <fileset dir="test">
+          <include name="*.php"/>
+        </fileset>
+      </batchtest>
+    </phpunit>
+  </target>
+</project>
