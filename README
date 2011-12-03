@@ -1,0 +1,7 @@
+php-ipaddr
+
+required:
+  pear Math/BigInteger.php
+
+original:
+  http://svn.ruby-lang.org/cgi-bin/viewvc.cgi/trunk/lib/ipaddr.rb?view=markup&pathrev=31686
