@@ -1,7 +1,5 @@
 <?php
 
-require_once dirname(__FILE__).'/../src/IPAddr.php';
-
 class IPAddrTest extends PHPUnit_Framework_TestCase
 {
 	public function test_construct()
