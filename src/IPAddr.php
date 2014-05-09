@@ -1,9 +1,5 @@
 <?php
 
-require_once 'IPAddr/Exception.php';
-require_once 'Math/BigInteger.php';
-
-
 class IPAddr
 {
 	// const
