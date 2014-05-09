@@ -393,7 +393,7 @@ class IPAddr
 	{
 		switch ($this->_family) {
 		case AF_INET:
-			return implode('.', array_reverse(explode('.', long2ip($this->_addr))));
+			return implode('.', array_reverse(explode('.', long2ip((string) $this->_addr))));
 		case AF_INET6:
 			$hex = "";
 			$tmp = $this->_addr;
@@ -415,7 +415,7 @@ class IPAddr
 	{
 		switch ($this->_family) {
 		case AF_INET:
-			return long2ip($this->_addr);
+			return long2ip((string) $this->_addr);
 		case AF_INET6:
 			$sections = array();
 			$tmp = $this->_addr;
