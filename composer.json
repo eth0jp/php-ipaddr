@@ -1,0 +1,21 @@
+{
+    "name": "eth0jp/php-ipaddr",
+    "description": "Ruby IpAddr class PHP porting",
+    "authors": [
+        {
+            "name": "Tetsuya Yoshida"
+        }
+    ],
+    "require": {
+        "php": ">=5.0.0",
+        "pear/math_biginteger": "dev-master"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*"
+    },
+    "minimum-stability": "beta",
+    "prefer-stable": true,
+    "autoload": {
+        "classmap": [ "src/" ]
+    }
+}
